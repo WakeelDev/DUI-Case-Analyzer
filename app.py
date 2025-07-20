@@ -39,7 +39,7 @@ def extract_text_from_report(report_file):
 
 # Transcribe the video using Whisper
 def transcribe_video(video_path):
-    model = whisper.load_model("base")  # or "medium", "small", etc.
+    model = whisper.load_model("small")  # or "medium", "small", etc.
     return model.transcribe(video_path)["text"]
 
 # Process when both inputs are available
