@@ -26,7 +26,7 @@ if not report_file:
 # ------------------ Transcribe Video ------------------
 @st.cache_resource
 def transcribe_video(video_path):
-    model = whisper.load_model("small")
+    model = whisper.load_model("base")
     result = model.transcribe(video_path)
     return result["text"]
 
