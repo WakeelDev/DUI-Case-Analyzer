@@ -3,5 +3,5 @@ python-docx
 streamlit
 PyPDF2
 moviepy==1.0.3
-PyMuPDF
+PyMuPDF>=1.22.0
 torch
