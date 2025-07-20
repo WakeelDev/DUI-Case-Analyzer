@@ -9,7 +9,7 @@ import streamlit as st
 # Function to transcribe video using OpenAI Whisper
 @st.cache_resource
 def transcribe_video(video_path):
-    model = whisper.load_model("base")
+    model = whisper.load_model("medium")
     result = model.transcribe(video_path)
     return result["text"]
 
