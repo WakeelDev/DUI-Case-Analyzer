@@ -52,8 +52,12 @@ def generate_word_summary(transcript, report_text, matching_lines):
 # Streamlit UI
 st.title("DUI Case Analyzer (Video + Report Comparator)")
 
-video_file = st.file_uploader("Upload Bodycam Video (.mp4 or .mov)", type=["mp4", "mov"])
-report_file = st.file_uploader("Upload Police Report (.docx)", type=["docx"])
+# In the sidebar
+st.sidebar.header("Upload Files")
+
+video_file = st.sidebar.file_uploader("Upload Bodycam Video", type=["mp4", "mov", "avi", "mkv"])
+report_file = st.sidebar.file_uploader("Upload Police Report", type=["pdf", "docx"])
+
 
 if video_file and report_file:
     with st.spinner("Processing..."):
