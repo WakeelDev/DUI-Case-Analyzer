@@ -1,4 +1,3 @@
-Kindly check my present code and provide me the full updated code.     import streamlit as st
 import torch
 import whisper
 import fitz  # PyMuPDF
