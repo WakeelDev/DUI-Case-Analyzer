@@ -9,15 +9,30 @@ import tempfile
 import os
 
 # -------------------------------
-# 🔐 Password Protection Block
+# 🔐 Password Protection Section
 # -------------------------------
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🔐 DUI Case Analyzer (Secure Access)")
+    password = st.text_input("Enter password to continue", type="password")
+    
+    if password == "yourSecretPassword":  # Replace with your real password
+        st.session_state.authenticated = True
+        st.experimental_rerun()  # Refresh the app so the UI updates
+    elif password:
+        st.error("Incorrect password. Please try again.")
+    st.stop()
+
+# -------------------------------
+# ✅ Main App Starts After Auth
+# -------------------------------
+
 st.title("DUI Case Analyzer (Video + Report Comparator)")
 
-password = st.text_input("Enter password to continue", type="password")
+# ... now continue with your sidebar and main UI
 
-if password != "yourSecretPassword":
-    st.warning("Access denied. Please enter the correct password.")
-    st.stop()
 
 # Function to transcribe video using OpenAI Whisper
 @st.cache_resource
