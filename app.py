@@ -36,7 +36,7 @@ def extract_text_from_report(uploaded_file):
         return text
     elif uploaded_file.name.endswith(".docx"):
         doc = Document(uploaded_file)
-        return "
+        return 
 ".join([para.text for para in doc.paragraphs])"
     else:
         return "Unsupported file format."
