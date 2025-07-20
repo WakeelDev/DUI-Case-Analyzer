@@ -1,4 +1,3 @@
-
 import os
 import tempfile
 import whisper
@@ -36,8 +35,7 @@ def extract_text_from_report(uploaded_file):
         return text
     elif uploaded_file.name.endswith(".docx"):
         doc = Document(uploaded_file)
-        return 
-".join([para.text for para in doc.paragraphs])"
+        return "\n".join([para.text for para in doc.paragraphs])
     else:
         return "Unsupported file format."
 
