@@ -26,7 +26,7 @@ if not report_file:
         height=250
     )
 
-# Process the uploaded report
+# Extract text from uploaded report
 def extract_text_from_report(report_file):
     if report_file.name.endswith(".pdf"):
         pdf_doc = fitz.open(stream=report_file.read(), filetype="pdf")
@@ -37,16 +37,16 @@ def extract_text_from_report(report_file):
     else:
         return None
 
-# Transcribe the video using Whisper
+# Transcribe the uploaded video using Whisper
 def transcribe_video(video_path):
-    model = whisper.load_model("small")  # or "medium", "small", etc.
+    model = whisper.load_model("small")  # Change model size if needed
     return model.transcribe(video_path)["text"]
 
-# Process when both inputs are available
+# Main Logic
 if (video_file and report_file) or (video_file and typed_report):
     with st.spinner("Processing video and report..."):
 
-        # Save the uploaded video temporarily
+        # Save uploaded video temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_vid:
             tmp_vid.write(video_file.read())
             tmp_video_path = tmp_vid.name
@@ -60,17 +60,15 @@ if (video_file and report_file) or (video_file and typed_report):
         else:
             report_text = typed_report
 
-        # Display results
+        # Display outputs
         st.subheader("🔊 Transcription from Bodycam Video")
         st.text_area("Transcript:", transcript, height=300)
 
         st.subheader("📝 Police Report Content")
         st.text_area("Report:", report_text, height=300)
 
-        # You could add comparison or analysis here
         st.success("✅ Analysis complete!")
 
-# Just a notice if not all inputs are available
 elif video_file and not report_file and not typed_report:
     st.warning("Please upload a police report or type it manually.")
 
