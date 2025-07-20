@@ -2,7 +2,6 @@ import os
 import tempfile
 import whisper
 import streamlit as st
-from moviepy.editor import VideoFileClip
 from PyPDF2 import PdfReader
 from docx import Document
 
