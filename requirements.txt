@@ -1,6 +1,5 @@
-
-streamlit
-whisper
-moviepy
-PyPDF2
+openai-whisper
 python-docx
+streamlit
+PyPDF2
+
