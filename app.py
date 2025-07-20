@@ -11,45 +11,52 @@ import os
 # -------------------------------
 # 🔐 Password Protection Section
 # -------------------------------
+st.set_page_config(page_title="DUI Case Analyzer", layout="centered")
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    st.title("🔐 DUI Case Analyzer (Secure Access)")
+    st.title("🔐 DUI Case Analyzer")
     password = st.text_input("Enter password to continue", type="password")
     
-    if password == "yourSecretPassword":  # Replace with your real password
+    if password == "yourSecretPassword":  # Replace with a strong password
         st.session_state.authenticated = True
-        st.experimental_rerun()  # Refresh the app so the UI updates
+        st.success("Access granted!")
     elif password:
-        st.error("Incorrect password. Please try again.")
+        st.error("Incorrect password.")
     st.stop()
 
 # -------------------------------
 # ✅ Main App Starts After Auth
 # -------------------------------
-
 st.title("DUI Case Analyzer (Video + Report Comparator)")
+st.markdown("Upload a **bodycam video** and either **upload a police report** or **type it manually**.")
 
-# ... now continue with your sidebar and main UI
+# Sidebar - file uploads
+st.sidebar.header("Upload Files")
+video_file = st.sidebar.file_uploader("Upload Bodycam Video", type=["mp4", "mov", "avi", "mkv"])
+report_file = st.sidebar.file_uploader("Upload Police Report (PDF or DOCX)", type=["pdf", "docx"])
 
+# Manual report entry if no file is uploaded
+typed_report = None
+if not report_file:
+    typed_report = st.text_area(
+        label="",
+        placeholder="Type the report manually",
+        height=200
+    )
 
-# Function to transcribe video using OpenAI Whisper
+# ---------------------------------
+# 🔁 Utility Functions
+# ---------------------------------
+
 @st.cache_resource
 def transcribe_video(video_path):
-    model = whisper.load_model("small")
+    model = whisper.load_model("small")  # You can switch to 'medium' if needed
     result = model.transcribe(video_path)
     return result["text"]
 
-# Function to read the police report text (PDF or DOCX)
-def read_report(report_file):
-    if report_file.name.endswith(".pdf"):
-        return read_pdf(report_file)
-    else:
-        doc = Document(report_file)
-        return "\n".join([para.text for para in doc.paragraphs])
-
-# Read PDF using PyMuPDF
 def read_pdf(pdf_file):
     text = ""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -60,7 +67,13 @@ def read_pdf(pdf_file):
         text += page.get_text()
     return text
 
-# Function to compare transcript and report
+def read_report(report_file):
+    if report_file.name.endswith(".pdf"):
+        return read_pdf(report_file)
+    else:
+        doc = Document(report_file)
+        return "\n".join([para.text for para in doc.paragraphs])
+
 def compare_texts(transcript, report_text):
     shared_phrases = []
     for line in transcript.splitlines():
@@ -68,7 +81,6 @@ def compare_texts(transcript, report_text):
             shared_phrases.append(line.strip())
     return shared_phrases
 
-# Function to create Word summary
 def generate_word_summary(transcript, report_text, matching_lines):
     doc = Document()
     doc.add_heading("DUI Case Analysis Summary", 0)
@@ -90,49 +102,43 @@ def generate_word_summary(transcript, report_text, matching_lines):
         doc.save(tmp.name)
         return tmp.name
 
-# ------------------ UI SECTION ------------------
-st.set_page_config(page_title="DUI Case Analyzer", layout="centered")
-st.title("DUI Case Analyzer (Video + Report Comparator)")
-st.markdown("Upload a **bodycam video** and either **upload a police report** or **type it manually**.")
-
-# Sidebar file uploads
-st.sidebar.header("Upload Files")
-video_file = st.sidebar.file_uploader("Upload Bodycam Video", type=["mp4", "mov", "avi", "mkv"])
-report_file = st.sidebar.file_uploader("Upload Police Report (PDF or DOCX)", type=["pdf", "docx"])
-
-# If report is NOT uploaded, show manual input box
-typed_report = None
-if not report_file:
-    typed_report = st.text_area("Manual Report Entry", placeholder="Type the report here...", height=200)
-
-# === PROCESS ===
+# ---------------------------------
+# 🚀 Analysis Trigger
+# ---------------------------------
 if video_file and (report_file or typed_report):
-    st.success("Ready to process!")
+    st.success("Ready to process the case file.")
+    
     if st.button("Run Analysis"):
-        with st.spinner("Processing... Please wait."):
+        with st.spinner("Processing video and report..."):
             # Save video temporarily
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_vid:
                 tmp_vid.write(video_file.read())
                 tmp_video_path = tmp_vid.name
 
-            # Transcribe video
+            # Transcribe the video
             transcript = transcribe_video(tmp_video_path)
 
             # Read report
             report_text = read_report(report_file) if report_file else typed_report
 
-            # Compare
+            # Compare texts
             matching_lines = compare_texts(transcript, report_text)
 
-            # Generate summary
+            # Generate summary report
             summary_path = generate_word_summary(transcript, report_text, matching_lines)
 
-        st.success("Analysis complete!")
-        st.download_button("📄 Download Word Report", data=open(summary_path, "rb").read(), file_name="dui_case_summary.docx")
+        st.success("Analysis complete ✅")
+        st.download_button(
+            label="📄 Download Word Report",
+            data=open(summary_path, "rb").read(),
+            file_name="dui_case_summary.docx"
+        )
 
-        # Preview Section
-        st.subheader("Preview")
+        # Preview Output
+        st.subheader("Transcript Preview")
         st.text_area("Transcript", transcript, height=200)
+
+        st.subheader("Matched Phrases")
         st.text_area("Matching Lines", "\n".join(matching_lines) if matching_lines else "No matching phrases.", height=150)
 else:
-    st.info("Please upload both a video and a report (uploaded or typed) to proceed.")
+    st.info("Please upload both a video and a report (either uploaded or typed) to continue.")
