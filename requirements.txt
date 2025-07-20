@@ -1,0 +1,6 @@
+
+streamlit
+whisper
+moviepy
+PyPDF2
+python-docx
