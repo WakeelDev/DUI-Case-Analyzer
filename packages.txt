@@ -1,1 +1,1 @@
-imageio-ffmpeg
+ffmpeg version ≥ 4.2
