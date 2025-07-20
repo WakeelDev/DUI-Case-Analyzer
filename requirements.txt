@@ -2,4 +2,5 @@ openai-whisper
 python-docx
 streamlit
 PyPDF2
+moviepy==1.0.3
 
