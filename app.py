@@ -1,6 +1,7 @@
 import os
 import tempfile
 import whisper
+import fitz  # PyMuPDF for reading PDFs
 from moviepy.editor import VideoFileClip
 from docx import Document
 import streamlit as st
@@ -12,13 +13,26 @@ def transcribe_video(video_path):
     result = model.transcribe(video_path)
     return result["text"]
 
-# Function to read the police report text
-def read_report(docx_file):
-    doc = Document(docx_file)
-    full_text = "\n".join([para.text for para in doc.paragraphs])
-    return full_text
+# Function to read the police report text (PDF or DOCX)
+def read_report(report_file):
+    if report_file.name.endswith(".pdf"):
+        return read_pdf(report_file)
+    else:
+        doc = Document(report_file)
+        return "\n".join([para.text for para in doc.paragraphs])
 
-# Function to compare transcript and report (very basic for now)
+# Read PDF using PyMuPDF
+def read_pdf(pdf_file):
+    text = ""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(pdf_file.read())
+        tmp_path = tmp.name
+    doc = fitz.open(tmp_path)
+    for page in doc:
+        text += page.get_text()
+    return text
+
+# Function to compare transcript and report
 def compare_texts(transcript, report_text):
     shared_phrases = []
     for line in transcript.splitlines():
@@ -44,62 +58,54 @@ def generate_word_summary(transcript, report_text, matching_lines):
     else:
         doc.add_paragraph("No matching phrases found.")
 
-    # Save to a temporary file and return path
     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
         doc.save(tmp.name)
         return tmp.name
 
+# ------------------ UI SECTION ------------------
+st.set_page_config(page_title="DUI Case Analyzer", layout="centered")
 st.title("DUI Case Analyzer (Video + Report Comparator)")
-st.markdown("Upload a bodycam video and either upload a police report or type it manually.")
+st.markdown("Upload a **bodycam video** and either **upload a police report** or **type it manually**.")
 
 # Sidebar file uploads
 st.sidebar.header("Upload Files")
 video_file = st.sidebar.file_uploader("Upload Bodycam Video", type=["mp4", "mov", "avi", "mkv"])
 report_file = st.sidebar.file_uploader("Upload Police Report (PDF or DOCX)", type=["pdf", "docx"])
 
-
-# Show text input if no report file is uploaded 
+# If report is NOT uploaded, show manual input box
 typed_report = None
 if not report_file:
-    typed_report = st.text_area(
-        label="",  # No label on top
-        placeholder="type the report manually"
-    )
+    st.markdown("### Or Type the Report Manually:")
+    typed_report = st.text_area("Manual Report Entry", placeholder="Type the report here...", height=200)
 
-
-# Proceed when we have both inputs (either uploaded report or typed one)
+# === PROCESS ===
 if video_file and (report_file or typed_report):
     st.success("Ready to process!")
-    # 🧠 Place your transcription, comparison, and output logic here
+    if st.button("Run Analysis"):
+        with st.spinner("Processing... Please wait."):
+            # Save video temporarily
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_vid:
+                tmp_vid.write(video_file.read())
+                tmp_video_path = tmp_vid.name
+
+            # Transcribe video
+            transcript = transcribe_video(tmp_video_path)
+
+            # Read report
+            report_text = read_report(report_file) if report_file else typed_report
+
+            # Compare
+            matching_lines = compare_texts(transcript, report_text)
+
+            # Generate summary
+            summary_path = generate_word_summary(transcript, report_text, matching_lines)
+
+        st.success("Analysis complete!")
+        st.download_button("📄 Download Word Report", data=open(summary_path, "rb").read(), file_name="dui_case_summary.docx")
+
+        # Preview Section
+        st.subheader("Preview")
+        st.text_area("Transcript", transcript, height=200)
+        st.text_area("Matching Lines", "\n".join(matching_lines) if matching_lines else "No matching phrases.", height=150)
 else:
-    st.info("Please upload both video and report (typed or file) to continue.")
-
-
-
-if video_file and report_file:
-    with st.spinner("Processing..."):
-
-        # Save temp video
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_vid:
-            tmp_vid.write(video_file.read())
-            tmp_video_path = tmp_vid.name
-
-        # Step 1: Transcribe the video
-        transcript = transcribe_video(tmp_video_path)
-
-        # Step 2: Read report
-        report_text = read_report(report_file)
-
-        # Step 3: Compare transcript and report
-        matching_lines = compare_texts(transcript, report_text)
-
-        # Step 4: Generate downloadable Word summary
-        summary_path = generate_word_summary(transcript, report_text, matching_lines)
-
-    st.success("Analysis complete!")
-    st.download_button("Download Word Report", data=open(summary_path, "rb").read(), file_name="dui_case_summary.docx")
-
-    st.subheader("Preview (Transcript + Matches)")
-    st.text_area("Transcript", transcript, height=200)
-    st.text_area("Matching Lines", "\n".join(matching_lines), height=150 if matching_lines else 50)
-
+    st.info("Please upload both a video and a report (uploaded or typed) to proceed.")
