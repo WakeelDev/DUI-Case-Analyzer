@@ -57,11 +57,6 @@ st.sidebar.header("Upload Files")
 video_file = st.sidebar.file_uploader("Upload Bodycam Video", type=["mp4", "mov", "avi", "mkv"])
 report_file = st.sidebar.file_uploader("Upload Police Report (PDF or DOCX)", type=["pdf", "docx"])
 
-st.sidebar.markdown("### Step 1: Upload Video")
-# then the video uploader...
-
-st.sidebar.markdown("### Step 2: Upload Report")
-# then the report uploader...
 
 # Show text input if no report file is uploaded 
 typed_report = None
