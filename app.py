@@ -75,7 +75,6 @@ report_file = st.sidebar.file_uploader("Upload Police Report (PDF or DOCX)", typ
 # If report is NOT uploaded, show manual input box
 typed_report = None
 if not report_file:
-    st.markdown("### Or Type the Report Manually:")
     typed_report = st.text_area("Manual Report Entry", placeholder="Type the report here...", height=200)
 
 # === PROCESS ===
