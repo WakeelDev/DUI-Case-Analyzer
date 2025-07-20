@@ -57,10 +57,20 @@ st.sidebar.header("Upload Files")
 video_file = st.sidebar.file_uploader("Upload Bodycam Video", type=["mp4", "mov", "avi", "mkv"])
 report_file = st.sidebar.file_uploader("Upload Police Report (PDF or DOCX)", type=["pdf", "docx"])
 
-# Show text input if no report file is uploaded
+st.sidebar.markdown("### Step 1: Upload Video")
+# then the video uploader...
+
+st.sidebar.markdown("### Step 2: Upload Report")
+# then the report uploader...
+
+# Show text input if no report file is uploaded 
 typed_report = None
 if not report_file:
-    typed_report = st.text_area("Or type the police report manually below:")
+    typed_report = st.text_area(
+        label="",  # No label on top
+        placeholder="type the report manually"
+    )
+
 
 # Proceed when we have both inputs (either uploaded report or typed one)
 if video_file and (report_file or typed_report):
