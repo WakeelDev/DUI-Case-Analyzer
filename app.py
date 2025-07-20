@@ -1,10 +1,23 @@
-import os
-import tempfile
-import whisper
-import fitz  # PyMuPDF for reading PDFs
-from moviepy.editor import VideoFileClip
-from docx import Document
 import streamlit as st
+import torch
+import whisper
+import fitz  # PyMuPDF
+from moviepy.editor import VideoFileClip
+from PyPDF2 import PdfReader
+from docx import Document
+import tempfile
+import os
+
+# -------------------------------
+# 🔐 Password Protection Block
+# -------------------------------
+st.title("DUI Case Analyzer (Video + Report Comparator)")
+
+password = st.text_input("Enter password to continue", type="password")
+
+if password != "yourSecretPassword":
+    st.warning("Access denied. Please enter the correct password.")
+    st.stop()
 
 # Function to transcribe video using OpenAI Whisper
 @st.cache_resource
