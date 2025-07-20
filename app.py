@@ -6,15 +6,6 @@ import fitz  # PyMuPDF
 from moviepy.editor import VideoFileClip
 from docx import Document
 import whisper
-import subprocess
-
-# Check ffmpeg availability
-try:
-    subprocess.run(["ffmpeg", "-version"], check=True, capture_output=True)
-    st.success("FFmpeg is properly installed and accessible.")
-except Exception as e:
-    st.error("FFmpeg is NOT accessible. Please check packages.txt or system path.")
-    st.error(str(e))
 
 
 st.set_page_config(page_title="DUI Case Analyzer", layout="wide")
