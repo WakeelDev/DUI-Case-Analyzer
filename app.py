@@ -49,14 +49,26 @@ def generate_word_summary(transcript, report_text, matching_lines):
         doc.save(tmp.name)
         return tmp.name
 
-# Streamlit UI
 st.title("DUI Case Analyzer (Video + Report Comparator)")
+st.markdown("Upload a bodycam video and either upload a police report or type it manually.")
 
-# In the sidebar
+# Sidebar file uploads
 st.sidebar.header("Upload Files")
-
 video_file = st.sidebar.file_uploader("Upload Bodycam Video", type=["mp4", "mov", "avi", "mkv"])
-report_file = st.sidebar.file_uploader("Upload Police Report", type=["pdf", "docx"])
+report_file = st.sidebar.file_uploader("Upload Police Report (PDF or DOCX)", type=["pdf", "docx"])
+
+# Show text input if no report file is uploaded
+typed_report = None
+if not report_file:
+    typed_report = st.text_area("Or type the police report manually below:")
+
+# Proceed when we have both inputs (either uploaded report or typed one)
+if video_file and (report_file or typed_report):
+    st.success("Ready to process!")
+    # 🧠 Place your transcription, comparison, and output logic here
+else:
+    st.info("Please upload both video and report (typed or file) to continue.")
+
 
 
 if video_file and report_file:
