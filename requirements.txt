@@ -1,3 +1,4 @@
+--prefer-binary
 PyMuPDF==1.21.1
 streamlit==1.34.0
 openai-whisper==20230314
