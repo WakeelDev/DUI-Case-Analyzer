@@ -1,7 +1,7 @@
 streamlit
 whisper
-PymuPDF # This is 'fitz'
+PymuPDF # For 'fitz'
 python-docx
-moviepy # Even if not directly used, it's imported
+moviepy
 PyPDF2
 torch
