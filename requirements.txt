@@ -1,7 +1,6 @@
-openai-whisper
-python-docx
 streamlit
+whisper
+PymuPDF # This is 'fitz'
+python-docx
+moviepy # Even if not directly used, it's imported
 PyPDF2
-moviepy==1.0.3
-PyMuPDF
-torch
