@@ -1,7 +1,7 @@
 streamlit
-openai-whisper
+openai-whisper==20231117
 PymuPDF
 python-docx
-moviepy
+moviepy==1.0.3
 PyPDF2
 torch
