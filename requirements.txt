@@ -2,5 +2,4 @@ streamlit
 openai-whisper
 PymuPDF
 python-docx
-moviepy
 PyPDF2
