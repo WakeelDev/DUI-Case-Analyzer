@@ -1,7 +1,11 @@
 streamlit
-openai-whisper==20231117
+openai-whisper==20231117 # Pin to a specific, recent stable version
 PymuPDF
 python-docx
-moviepy==1.0.3
+moviepy
+imageio
+imageio-ffmpeg
+Pillow
 PyPDF2
-torch
+# CRITICAL: Specify CPU-only torch with its index URL
+torch==2.1.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
