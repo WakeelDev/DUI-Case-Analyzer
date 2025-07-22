@@ -2,7 +2,7 @@ import streamlit as st
 import torch
 import whisper
 import fitz  # PyMuPDF
-from moviepy.editor import VideoFileClip
+#from moviepy.editor import VideoFileClip
 from PyPDF2 import PdfReader
 from docx import Document
 import tempfile
