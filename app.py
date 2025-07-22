@@ -44,7 +44,7 @@ if not report_file:
 def load_whisper_model():
     try:
         logging.info("Loading Whisper model 'base'...")
-        model = whisper.load_model("small")
+        model = whisper.load_model("base")
         logging.info("Whisper model loaded successfully.")
         return model
     except Exception as e:
