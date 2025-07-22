@@ -1,6 +1,7 @@
-streamlit
 openai-whisper
 python-docx
+streamlit
 PyPDF2
-ffmpeg-python
-pymupdf
+moviepy==1.0.3
+PyMuPDF
+torch
