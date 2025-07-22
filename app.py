@@ -3,7 +3,7 @@ import streamlit as st
 import whisper
 import fitz  # PyMuPDF
 import docx
-from PyPDF2 import PdfReader
+from pypdf2 import PdfReader
 from docx import Document
 from io import BytesIO
 import tempfile
