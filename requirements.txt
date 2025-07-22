@@ -2,4 +2,3 @@ streamlit
 openai-whisper
 python-docx
 PyPDF2
-ffmpeg
