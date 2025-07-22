@@ -4,3 +4,4 @@ PymuPDF # This is 'fitz'
 python-docx
 moviepy # Even if not directly used, it's imported
 PyPDF2
+torch
