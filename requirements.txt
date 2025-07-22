@@ -1,7 +1,12 @@
 streamlit
 whisper
-PymuPDF # For 'fitz'
+PymuPDF
 python-docx
+# Explicitly including moviepy and its common dependencies
 moviepy
+imageio
+imageio-ffmpeg
+Pillow
 PyPDF2
-torch
+# Explicitly including torch with CPU-only wheel for better compatibility on cloud
+torch==2.1.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
