@@ -1,6 +1,6 @@
 streamlit
 whisper
 PyMuPDF
+PyPDF2
 python-docx
 torch
-pyPDF2
