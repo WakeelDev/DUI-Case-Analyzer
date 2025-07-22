@@ -2,7 +2,7 @@ import streamlit as st
 import torch
 import whisper
 import fitz  # PyMuPDF
-#from moviepy.editor import VideoFileClip # Although imported, VideoFileClip is not used in the provided code.
+from moviepy.editor import VideoFileClip # Although imported, VideoFileClip is not used in the provided code.
 from PyPDF2 import PdfReader # Although imported, PdfReader is not used in the provided code.
 from docx import Document
 import tempfile
@@ -13,6 +13,26 @@ import shutil # Import shutil for safe deletion of temporary files
 
 # Configure logging for better debugging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# --- DIAGNOSTIC CODE START ---
+# This block will help us understand which 'whisper' module is being loaded
+try:
+    logging.info("--- DEBUG: Inspecting 'whisper' module ---")
+    if hasattr(whisper, 'load_model'):
+        logging.info("DEBUG: 'whisper' module HAS 'load_model' attribute. This is good!")
+    else:
+        logging.error("DEBUG: 'whisper' module DOES NOT HAVE 'load_model' attribute. This is the problem.")
+        logging.error(f"DEBUG: Type of 'whisper' module: {type(whisper)}")
+        # Attempt to get the file path of the loaded module
+        whisper_path = getattr(whisper, '__file__', 'N/A')
+        logging.error(f"DEBUG: Path of 'whisper' module: {whisper_path}")
+        # List all attributes of the loaded module
+        logging.error(f"DEBUG: Dir of 'whisper' module: {dir(whisper)}")
+    logging.info("--- DEBUG: Finished 'whisper' module inspection ---")
+except Exception as e:
+    logging.error(f"DEBUG: Error during whisper module inspection: {e}", exc_info=True)
+# --- DIAGNOSTIC CODE END ---
+
 
 # ------------------ Streamlit Setup ------------------
 st.set_page_config(page_title="DUI Case Analyzer", layout="centered")
@@ -69,8 +89,9 @@ def transcribe_video(video_path):
         logging.info("Video transcription completed successfully.")
         return result["text"]
     except subprocess.CalledProcessError as e:
-        logging.error(f"FFmpeg failed during video processing: {e.stderr.decode()}")
-        st.error(f"FFmpeg failed to process the video. Make sure ffmpeg is installed and the video is valid. Error details: {e.stderr.decode()}")
+        # This error typically means ffmpeg was not found or failed to run
+        logging.error(f"FFmpeg failed during video processing: {e.stderr.decode() if e.stderr else 'No stderr output'}")
+        st.error(f"FFmpeg failed to process the video. Make sure ffmpeg is installed and the video is valid. Error details: {e.stderr.decode() if e.stderr else 'Check Streamlit logs for more details.'}")
         return ""
     except Exception as e:
         logging.error(f"Unexpected error during transcription: {str(e)}", exc_info=True)
@@ -117,7 +138,8 @@ def compare_texts(transcript, report_text):
     """Compares transcript lines with report text to find matching phrases."""
     shared_phrases = []
     # Normalize texts for better comparison (e.g., lowercasing, removing extra spaces)
-    normalized_report_text = report_text.lower().strip()
+    # Ensure both inputs are strings before calling .lower()
+    normalized_report_text = str(report_text).lower().strip() if report_text else ""
     
     for line in transcript.splitlines():
         normalized_line = line.strip().lower()
@@ -208,7 +230,7 @@ if video_file and (report_file or typed_report):
                     st.text_area("Transcript", transcript if transcript else "No transcript generated.", height=200)
 
                     st.subheader("✅ Matching Lines")
-                    st.text_area("Matching Lines", "\n".join(matching_lines) if matching_lines else "No matching phrases found.", height=150)
+                    st.text_area("Matching Lines", "\n.join(matching_lines) if matching_lines else "No matching phrases found.", height=150)
 
                 else:
                     st.error("Temporary video file could not be saved. Please try again.")
@@ -223,8 +245,8 @@ if video_file and (report_file or typed_report):
                     logging.info(f"Temporary video file deleted: {tmp_video_path}")
                 if summary_path and os.path.exists(summary_path):
                     os.remove(summary_path)
-                    logging.info(f"Temporary summary file deleted: {summary_path}")
-
+                    logging.info(f"Temporary summary file deleted: {tmp_path}") # Corrected variable name here
+                
 else:
     st.info("Please upload both a bodycam video and a police report (or enter manually) to proceed.")
 
