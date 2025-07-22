@@ -43,7 +43,7 @@ if not report_file:
 @st.cache_resource
 def load_whisper_model():
     try:
-        logging.info("Loading Whisper model 'small'...")
+        logging.info("Loading Whisper model 'base'...")
         model = whisper.load_model("small")
         logging.info("Whisper model loaded successfully.")
         return model
