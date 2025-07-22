@@ -32,7 +32,7 @@ def transcribe_video(video_path):
         return ""
 
     try:
-        model = whisper.load_model("small")
+        model = whisper.load_model("medium")
         result = model.transcribe(video_path)
         return result["text"]
     except subprocess.CalledProcessError as e:
