@@ -1,6 +1,6 @@
-openai-whisper
-python-docx
 streamlit
+whisper
+python-docx
 PyPDF2
 moviepy==1.0.3
 PyMuPDF
