@@ -2,7 +2,7 @@ import streamlit as st
 import torch
 import whisper
 import fitz  # PyMuPDF
-#from moviepy.editor import VideoFileClip # Although imported, VideoFileClip is not used in the provided code.
+from moviepy.editor import VideoFileClip # Although imported, VideoFileClip is not used in the provided code.
 from PyPDF2 import PdfReader # Although imported, PdfReader is not used in the provided code.
 from docx import Document
 import tempfile
@@ -230,7 +230,8 @@ if video_file and (report_file or typed_report):
                     st.text_area("Transcript", transcript if transcript else "No transcript generated.", height=200)
 
                     st.subheader("✅ Matching Lines")
-                    st.text_area("Matching Lines", "\n.join(matching_lines) if matching_lines else "No matching phrases found.", height=150)
+                    # FIX: Corrected the string literal and .join syntax
+                    st.text_area("Matching Lines", "\n".join(matching_lines) if matching_lines else "No matching phrases found.", height=150)
 
                 else:
                     st.error("Temporary video file could not be saved. Please try again.")
@@ -245,7 +246,7 @@ if video_file and (report_file or typed_report):
                     logging.info(f"Temporary video file deleted: {tmp_video_path}")
                 if summary_path and os.path.exists(summary_path):
                     os.remove(summary_path)
-                    logging.info(f"Temporary summary file deleted: {tmp_path}") # Corrected variable name here
+                    logging.info(f"Temporary summary file deleted: {summary_path}") # Corrected variable name here
                 
 else:
     st.info("Please upload both a bodycam video and a police report (or enter manually) to proceed.")
