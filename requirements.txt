@@ -3,3 +3,4 @@ whisper
 PyMuPDF
 python-docx
 torch
+pyPDF2
