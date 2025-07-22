@@ -3,5 +3,4 @@ python-docx
 streamlit
 pypdf
 moviepy==1.0.3
-PyMuPDF
 torch
