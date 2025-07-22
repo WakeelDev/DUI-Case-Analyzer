@@ -2,14 +2,15 @@ import streamlit as st
 import torch
 import whisper
 import fitz  # PyMuPDF
-#from moviepy.editor import VideoFileClip # Although imported, VideoFileClip is not used in the provided code.
-from PyPDF2 import PdfReader # Although imported, PdfReader is not used in the provided code.
+# Removed unused imports as per previous troubleshooting
+# from moviepy.editor import VideoFileClip
+# from PyPDF2 import PdfReader
 from docx import Document
 import tempfile
 import os
 import subprocess
-import logging # Import logging for more detailed error messages
-import shutil # Import shutil for safe deletion of temporary files
+import logging
+import shutil
 
 # Configure logging for better debugging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -23,15 +24,28 @@ try:
     else:
         logging.error("DEBUG: 'whisper' module DOES NOT HAVE 'load_model' attribute. This is the problem.")
         logging.error(f"DEBUG: Type of 'whisper' module: {type(whisper)}")
-        # Attempt to get the file path of the loaded module
         whisper_path = getattr(whisper, '__file__', 'N/A')
         logging.error(f"DEBUG: Path of 'whisper' module: {whisper_path}")
-        # List all attributes of the loaded module
         logging.error(f"DEBUG: Dir of 'whisper' module: {dir(whisper)}")
     logging.info("--- DEBUG: Finished 'whisper' module inspection ---")
 except Exception as e:
     logging.error(f"DEBUG: Error during whisper module inspection: {e}", exc_info=True)
-# --- DIAGNOSTIC CODE END ---
+
+# --- FFmpeg DIAGNOSTIC START ---
+# This block will check if ffmpeg is available and its version
+try:
+    logging.info("--- DEBUG: Checking FFmpeg availability ---")
+    # Use subprocess.run to capture output and check return code
+    result = subprocess.run(['ffmpeg', '-version'], capture_output=True, text=True, check=True)
+    logging.info(f"DEBUG: FFmpeg found. Version output:\n{result.stdout}")
+except FileNotFoundError:
+    logging.error("DEBUG: FFmpeg NOT FOUND in system PATH. This is the likely cause of [Errno 2].")
+except subprocess.CalledProcessError as e:
+    logging.error(f"DEBUG: FFmpeg command failed with error: {e.stderr}")
+except Exception as e:
+    logging.error(f"DEBUG: Unexpected error when checking FFmpeg: {e}", exc_info=True)
+logging.info("--- DEBUG: Finished FFmpeg availability check ---")
+# --- FFmpeg DIAGNOSTIC END ---
 
 
 # ------------------ Streamlit Setup ------------------
@@ -51,8 +65,6 @@ if not report_file:
 
 # ------------------ Helper Functions ------------------
 
-# Use st.cache_resource for the Whisper model to load it only once
-# This significantly speeds up subsequent runs and saves memory
 @st.cache_resource
 def load_whisper_model():
     """Loads the Whisper model and caches it."""
@@ -78,20 +90,20 @@ def transcribe_video(video_path):
 
     model = load_whisper_model()
     if model is None:
-        return "" # Model failed to load, return empty transcript
+        return ""
 
     try:
         logging.info(f"Starting transcription for video: {video_path}")
-        # Add a timeout to subprocess call if you suspect it's hanging
-        # Note: whisper.transcribe might not directly expose timeout for ffmpeg,
-        # but you can wrap it if needed for more control.
         result = model.transcribe(video_path)
         logging.info("Video transcription completed successfully.")
         return result["text"]
     except subprocess.CalledProcessError as e:
-        # This error typically means ffmpeg was not found or failed to run
         logging.error(f"FFmpeg failed during video processing: {e.stderr.decode() if e.stderr else 'No stderr output'}")
         st.error(f"FFmpeg failed to process the video. Make sure ffmpeg is installed and the video is valid. Error details: {e.stderr.decode() if e.stderr else 'Check Streamlit logs for more details.'}")
+        return ""
+    except FileNotFoundError: # Explicitly catch FileNotFoundError for ffmpeg
+        logging.error("FFmpeg executable not found. Please ensure it's installed and in PATH.")
+        st.error("Error: FFmpeg is required for video transcription but was not found. Please contact support.")
         return ""
     except Exception as e:
         logging.error(f"Unexpected error during transcription: {str(e)}", exc_info=True)
@@ -115,7 +127,7 @@ def read_report(report_file):
 def read_pdf(pdf_file):
     """Reads text from a PDF file using PyMuPDF (fitz)."""
     text = ""
-    tmp_path = None # Initialize tmp_path
+    tmp_path = None
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(pdf_file.read())
@@ -130,25 +142,19 @@ def read_pdf(pdf_file):
         st.error(f"Error reading PDF file: {str(e)}")
     finally:
         if tmp_path and os.path.exists(tmp_path):
-            os.remove(tmp_path) # Ensure temp file is deleted
+            os.remove(tmp_path)
             logging.info(f"Temporary PDF file deleted: {tmp_path}")
     return text
 
 def compare_texts(transcript, report_text):
     """Compares transcript lines with report text to find matching phrases."""
     shared_phrases = []
-    # Normalize texts for better comparison (e.g., lowercasing, removing extra spaces)
-    # Ensure both inputs are strings before calling .lower()
     normalized_report_text = str(report_text).lower().strip() if report_text else ""
     
     for line in transcript.splitlines():
         normalized_line = line.strip().lower()
         if normalized_line and normalized_line in normalized_report_text:
-            shared_phrases.append(line.strip()) # Append original line for display
-    
-    # Optional: You might want to use more sophisticated NLP techniques for comparison
-    # (e.g., fuzzy matching, sentence embeddings) for better results,
-    # but for exact phrase matching, this is fine.
+            shared_phrases.append(line.strip())
     
     return shared_phrases
 
@@ -170,7 +176,7 @@ def generate_word_summary(transcript, report_text, matching_lines):
     else:
         doc.add_paragraph("No matching phrases found.")
 
-    tmp_docx_path = None # Initialize tmp_docx_path
+    tmp_docx_path = None
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
             doc.save(tmp.name)
@@ -190,27 +196,22 @@ if video_file and (report_file or typed_report):
             tmp_video_path = None
             summary_path = None
             try:
-                # Save video to temp file
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_vid:
                     tmp_vid.write(video_file.read())
                     tmp_video_path = tmp_vid.name
                 logging.info(f"Video saved to temporary path: {tmp_video_path}")
 
                 if os.path.exists(tmp_video_path):
-                    # Transcribe video
                     transcript = transcribe_video(tmp_video_path)
 
-                    # Extract report text
                     report_text = read_report(report_file) if report_file else typed_report
-                    if not report_text: # Handle case where manual entry is empty
+                    if not report_text:
                         st.warning("No report text provided. Please upload a file or type manually.")
-                        transcript = "" # Clear transcript if no report to compare
-                        matching_lines = [] # No matches possible
+                        transcript = ""
+                        matching_lines = []
                     
-                    # Compare
                     matching_lines = compare_texts(transcript, report_text)
 
-                    # Generate Word summary
                     summary_path = generate_word_summary(transcript, report_text, matching_lines)
 
                     st.success("Analysis complete!")
@@ -225,12 +226,10 @@ if video_file and (report_file or typed_report):
                     else:
                         st.error("Could not generate Word report.")
 
-                    # Display result previews
                     st.subheader("🔊 Transcript")
                     st.text_area("Transcript", transcript if transcript else "No transcript generated.", height=200)
 
                     st.subheader("✅ Matching Lines")
-                    # FIX: Corrected the string literal and .join syntax
                     st.text_area("Matching Lines", "\n".join(matching_lines) if matching_lines else "No matching phrases found.", height=150)
 
                 else:
@@ -240,13 +239,12 @@ if video_file and (report_file or typed_report):
                 logging.error(f"An error occurred during analysis: {str(e)}", exc_info=True)
                 st.error(f"An unexpected error occurred during analysis: {str(e)}")
             finally:
-                # Clean up temporary files
                 if tmp_video_path and os.path.exists(tmp_video_path):
                     os.remove(tmp_video_path)
                     logging.info(f"Temporary video file deleted: {tmp_video_path}")
                 if summary_path and os.path.exists(summary_path):
                     os.remove(summary_path)
-                    logging.info(f"Temporary summary file deleted: {summary_path}") # Corrected variable name here
+                    logging.info(f"Temporary summary file deleted: {summary_path}")
                 
 else:
     st.info("Please upload both a bodycam video and a police report (or enter manually) to proceed.")
