@@ -1,128 +1,133 @@
-import streamlit as st
-import torch
-import whisper
-import fitz  # PyMuPDF
-# from moviepy.editor import VideoFileClip
-from pypdf import PdfReader  # FIX: Updated import from PyPDF2 → pypdf
-from docx import Document
-import tempfile
 import os
-import subprocess
+import tempfile
+import streamlit as st
+from PyPDF2 import PdfReader
+import whisper
+import difflib
+from moviepy.editor import VideoFileClip
+from docx import Document
 
-# ------------------ Streamlit Setup ------------------
-st.set_page_config(page_title="DUI Case Analyzer", layout="centered")
-st.title("🚔 DUI Case Analyzer (Video + Report Comparator)")
-st.markdown("Upload a **bodycam video** and either **upload a police report** or **type it manually.**")
-
-# ------------------ Sidebar Uploads ------------------
-st.sidebar.header("Upload Files")
-video_file = st.sidebar.file_uploader("Upload Bodycam Video", type=["mp4", "mov", "avi", "mkv"])
-report_file = st.sidebar.file_uploader("Upload Police Report (PDF or DOCX)", type=["pdf", "docx"])
-
-# ------------------ Manual Report Option ------------------
-typed_report = None
-if not report_file:
-    typed_report = st.text_area("Manual Report Entry", placeholder="Type the report here...", height=200)
-
-# ------------------ Helper Functions ------------------
-
+# -------------------------
+# Transcribe video with Whisper
+# -------------------------
 def transcribe_video(video_path):
-    if not os.path.exists(video_path):
-        st.error(f"Error: Video file not found at path: {video_path}")
-        return ""
-
     try:
+        audio_path = convert_video_to_audio(video_path)
         model = whisper.load_model("base")
-        result = model.transcribe(video_path)
+        result = model.transcribe(audio_path)
         return result["text"]
-    except subprocess.CalledProcessError:
-        st.error("FFmpeg failed to process the video. Make sure ffmpeg is installed and the video is valid.")
-        return ""
     except Exception as e:
-        st.error(f"Unexpected error during transcription: {str(e)}")
-        return ""
+        return f"An unexpected error occurred during transcription: {e}"
 
-def read_report(report_file):
-    if report_file.name.endswith(".pdf"):
-        return read_pdf(report_file)
-    else:
-        doc = Document(report_file)
-        return "\n".join([para.text for para in doc.paragraphs])
+# -------------------------
+# Convert video to audio
+# -------------------------
+def convert_video_to_audio(video_path):
+    audio_path = os.path.splitext(video_path)[0] + ".mp3"
+    clip = VideoFileClip(video_path)
+    clip.audio.write_audiofile(audio_path)
+    return audio_path
 
-def read_pdf(pdf_file):
-    text = ""
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(pdf_file.read())
-        tmp_path = tmp.name
-    reader = PdfReader(tmp_path)
-    for page in reader.pages:
-        text += page.extract_text()
-    return text
+# -------------------------
+# Extract text + tables from PDF report
+# -------------------------
+def parse_pdf_report(file_path):
+    try:
+        reader = PdfReader(file_path)
+        full_text = ""
 
-def compare_texts(transcript, report_text):
-    shared_phrases = []
-    for line in transcript.splitlines():
-        if line.strip() and line.strip() in report_text:
-            shared_phrases.append(line.strip())
-    return shared_phrases
+        for page_num, page in enumerate(reader.pages):
+            text = page.extract_text()
+            full_text += f"\n--- Page {page_num + 1} ---\n"
+            full_text += text if text else ""
 
-def generate_word_summary(transcript, report_text, matching_lines):
+            # Attempt to find table-like rows
+            lines = text.splitlines() if text else []
+            table_lines = [line for line in lines if '|' in line or '\t' in line or is_probable_table_row(line)]
+
+            if table_lines:
+                full_text += "\n\n[Extracted Table Data]\n"
+                for line in table_lines:
+                    full_text += line + "\n"
+
+        return full_text.strip()
+
+    except Exception as e:
+        return f"[Error while parsing PDF report: {e}]"
+
+def is_probable_table_row(line):
+    tokens = line.split()
+    return len(tokens) >= 3 and all(any(c.isdigit() for c in token) or token.isalpha() for token in tokens)
+
+# -------------------------
+# Compare video transcript with report
+# -------------------------
+def compare_texts(transcript, report):
+    diff = difflib.ndiff(report.split(), transcript.split())
+    comparison = "\n".join(diff)
+    return comparison
+
+# -------------------------
+# Export comparison to Word
+# -------------------------
+def export_to_word(transcript, report, comparison):
     doc = Document()
-    doc.add_heading("DUI Case Analysis Summary", 0)
+    doc.add_heading("DUI Case Analysis Report", 0)
 
-    doc.add_heading("Transcript Summary", level=1)
+    doc.add_heading("Transcription from Video", level=1)
     doc.add_paragraph(transcript)
 
-    doc.add_heading("Police Report", level=1)
-    doc.add_paragraph(report_text)
+    doc.add_heading("Police Report Text (with Tables)", level=1)
+    doc.add_paragraph(report)
 
-    doc.add_heading("Matched Phrases", level=1)
-    if matching_lines:
-        for line in matching_lines:
-            doc.add_paragraph(f"- {line}")
-    else:
-        doc.add_paragraph("No matching phrases found.")
+    doc.add_heading("Comparison", level=1)
+    doc.add_paragraph(comparison)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-        doc.save(tmp.name)
-        return tmp.name
+    temp_docx = tempfile.NamedTemporaryFile(delete=False, suffix=".docx")
+    doc.save(temp_docx.name)
+    return temp_docx.name
 
-# ------------------ Main Logic ------------------
-if video_file and (report_file or typed_report):
-    st.success("Ready to process!")
-    if st.button("Run Analysis"):
-        with st.spinner("Processing... Please wait."):
+# -------------------------
+# Streamlit UI
+# -------------------------
+st.set_page_config(page_title="DUI Case Analyzer", layout="wide")
+st.title("🚓 DUI Case Analyzer (Video + Report Comparator)")
 
-            # Save video to temp file
+video_file = st.file_uploader("Upload Bodycam Video", type=["mp4", "mov", "avi"])
+report_file = st.file_uploader("Upload Police Report (PDF)", type=["pdf"])
+
+if st.button("Analyze") and video_file and report_file:
+    with st.spinner("Analyzing..."):
+        try:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_vid:
                 tmp_vid.write(video_file.read())
                 tmp_video_path = tmp_vid.name
 
-            if os.path.exists(tmp_video_path):
-                # Transcribe video
-                transcript = transcribe_video(tmp_video_path)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
+                tmp_pdf.write(report_file.read())
+                tmp_pdf_path = tmp_pdf.name
 
-                # Extract report text
-                report_text = read_report(report_file) if report_file else typed_report
+            transcript = transcribe_video(tmp_video_path)
+            report_text = parse_pdf_report(tmp_pdf_path)
+            comparison = compare_texts(transcript, report_text)
+            docx_path = export_to_word(transcript, report_text, comparison)
 
-                # Compare
-                matching_lines = compare_texts(transcript, report_text)
+            st.subheader("Transcript")
+            st.text_area("Video Transcript", transcript, height=200)
 
-                # Generate Word summary
-                summary_path = generate_word_summary(transcript, report_text, matching_lines)
+            st.subheader("Police Report")
+            st.text_area("Report Content + Tables", report_text, height=200)
 
-                st.success("Analysis complete!")
-                st.download_button("📄 Download Word Report", data=open(summary_path, "rb").read(), file_name="dui_case_summary.docx")
+            st.subheader("Comparison")
+            st.text_area("Comparison Result", comparison, height=300)
 
-                # Display result previews
-                st.subheader("🔊 Transcript")
-                st.text_area("Transcript", transcript, height=200)
+            with open(docx_path, "rb") as f:
+                st.download_button(
+                    label="📄 Download Full Report (Word)",
+                    data=f,
+                    file_name="dui_case_analysis.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
 
-                st.subheader("✅ Matching Lines")
-                st.text_area("Matching Lines", "\n".join(matching_lines) if matching_lines else "No matching phrases.", height=150)
-
-            else:
-                st.error("Temporary video file could not be saved.")
-
-else:
-    st.info("Please upload both a bodycam video and a police report (or enter manually) to proceed.")
+        except Exception as e:
+            st.error(f"Something went wrong during analysis: {e}")
