@@ -2,7 +2,7 @@ import streamlit as st
 import torch
 import whisper
 import fitz  # PyMuPDF
-from moviepy.editor import VideoFileClip # Although imported, VideoFileClip is not used in the provided code.
+#from moviepy.editor import VideoFileClip # Although imported, VideoFileClip is not used in the provided code.
 from PyPDF2 import PdfReader # Although imported, PdfReader is not used in the provided code.
 from docx import Document
 import tempfile
