@@ -4,7 +4,7 @@ import streamlit as st
 from PyPDF2 import PdfReader
 import whisper
 import difflib
-from moviepy.editor import VideoFileClip
+#from moviepy.editor import VideoFileClip
 from docx import Document
 
 # -------------------------
@@ -13,7 +13,7 @@ from docx import Document
 def transcribe_video(video_path):
     try:
         audio_path = convert_video_to_audio(video_path)
-        model = whisper.load_model("base")
+        model = whisper.load_model("medium")
         result = model.transcribe(audio_path)
         return result["text"]
     except Exception as e:
