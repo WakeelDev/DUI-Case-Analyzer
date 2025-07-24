@@ -4,7 +4,7 @@ import streamlit as st
 from pypdf import PdfReader
 import whisper
 import difflib
-#from moviepy.editor import VideoFileClip
+from moviepy.editor import VideoFileClip
 from docx import Document
 
 # -------------------------
