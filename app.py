@@ -1,7 +1,7 @@
 import os
 import tempfile
 import streamlit as st
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 import whisper
 import difflib
 #from moviepy.editor import VideoFileClip
