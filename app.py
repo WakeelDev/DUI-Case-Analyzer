@@ -13,7 +13,7 @@ from docx import Document
 def transcribe_video(video_path):
     try:
         audio_path = convert_video_to_audio(video_path)
-        model = whisper.load_model("medium")
+        model = whisper.load_model("base")
         result = model.transcribe(audio_path)
         return result["text"]
     except Exception as e:
